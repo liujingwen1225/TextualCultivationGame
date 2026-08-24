@@ -161,31 +161,48 @@ V0.1 不运行全天候 NPC LLM Agent。
 
 ## 技术基线
 
-后端正式采用 Java：
+当前正式技术路线：
 
 ```text
-客户端
+多端客户端
 uni-app x + Vue 3 + TypeScript
         │
        REST
         │
-服务端
-Java 25 LTS + Spring Boot 4.1
+Java 25 LTS + Spring Boot 4.1.x
         │
-Pure Java Game Core
+       Application
+        │
+        ▼
+     Game Engine
+        │
+ ┌──────┼──────────────┐
+ │      │              │
+LiteFlow   Game Core   Event Engine
+流程编排    领域规则      内容规则
+ │      │              │
+ └──────┼──────────────┘
+        │
+Deterministic Random
         │
 PostgreSQL + jOOQ + Flyway
 ```
 
-工程原则：
+核心工程原则：
 
-- 模块化单体，不做微服务。
-- Game Core 保持纯 Java，不依赖 Spring / HTTP / PostgreSQL。
+- **模块化单体**，不做微服务。
+- `game-domain` 保存纯状态与领域模型。
+- `game-core` 保存真正的修炼、战斗、随机、回溯、固道等领域规则。
+- `game-flow` 使用 **LiteFlow 2.16.1** 编排修炼、突破、战斗、探索、结算、固道、回溯等流程。
+- LiteFlow **不负责几百/几千个具体剧情事件**，事件继续由数据驱动 Event Engine 管理。
+- LiteFlow Node 不直接访问数据库，不自行开启事务。
 - 服务端拥有全部权威游戏状态。
 - 同一 Run 的随机结果必须可复现，禁止刷新刷随机。
+- 每个 Run 固定 `ruleVersion + contentVersion + balanceVersion`，热更新不得改变进行中的一世。
 - 客户端通过 OpenAPI 生成 TypeScript API SDK。
-- 第一阶段不引入 Redis、MQ、Kubernetes、WebFlux。
+- 第一阶段不引入 Redis、MQ、Kubernetes、WebFlux、独立规则配置中心。
 - 微信登录 + 手机号验证码登录统一归属 User / UserIdentity。
+- AI 不参与权威游戏状态结算。
 
 多端目标：
 
@@ -247,6 +264,7 @@ V0.1：
 - [黑水秘境可玩场景 GDD](docs/13-blackwater-playable-scenario-gdd.md)
 - [Java 技术架构基线](docs/14-java-technical-architecture.md)
 - [跨世固道系统](docs/15-cross-life-solidification-system.md)
+- [LiteFlow 游戏流程编排规范](docs/16-liteflow-game-flow-orchestration.md)
 
 ## 开发原则
 
@@ -257,6 +275,7 @@ V0.1：
 - **固道必须有代价**：实体成果不是默认继承，而是稀有战略选择。
 - **固定骨架 + 随机经历**：让未来既可以被学习，又不会变成固定攻略。
 - **风险必须有信息价值**：重大失败与死亡应尽量让玩家理解下一世该改变什么。
+- **LiteFlow 只编排，不拥有规则**：避免通用规则框架绑死游戏领域模型。
 - **一个人可维护**：优先数据驱动、事件编辑器和内容工具。
 
 ## 第一阶段目标
