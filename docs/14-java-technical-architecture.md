@@ -1,6 +1,6 @@
 # 诸世问道：Java 技术架构基线
 
-> 状态：技术基线 V1.0  
+> 状态：技术基线 V1.1  
 > 目标：将现有游戏设计转换为可长期维护、可多端发布、适合单人 + AI 开发的工程架构。
 
 ---
@@ -15,6 +15,7 @@
 - Spring Boot 4.1.x
 - Spring MVC
 - Virtual Threads
+- LiteFlow 2.16.1
 - PostgreSQL
 - jOOQ 3.21.x
 - Flyway
@@ -34,6 +35,10 @@
 
 > 客户端只负责交互和表现，服务端拥有全部权威游戏状态与规则。
 
+LiteFlow 的定位：
+
+> **LiteFlow 负责游戏流程编排，自研 Game Core 负责真实领域规则。**
+
 ---
 
 # 2. 总体架构
@@ -49,12 +54,23 @@
        ┌─────────────────┼─────────────────┐
        │                 │                 │
     Account          Application         Content
-       │                 │                 │
-       │                 ▼                 │
-       │             Game Core             │
-       │                 │                 │
-       └─────────────────┼─────────────────┘
                          │
+                         ▼
+                   Game Engine
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+      LiteFlow        Game Core      Event Engine
+      流程编排          领域规则        内容规则
+          │              │              │
+          └──────────────┼──────────────┘
+                         │
+               Deterministic Random
+                         │
+                         ▼
+                    Game State
+                         │
+                         ▼
                     PostgreSQL
 ```
 
@@ -85,9 +101,10 @@ TextualCultivationGame/
 │
 ├── server/
 │   ├── pom.xml                  # Maven parent
-│   ├── game-core/               # 纯 Java 游戏规则
+│   ├── game-domain/             # 状态 / 值对象 / 领域模型
+│   ├── game-core/               # 纯领域规则 / Resolver
+│   ├── game-flow/               # LiteFlow 组件与 Chain
 │   ├── game-application/        # 用例编排 / 事务边界
-│   ├── game-domain-support/     # 公共领域类型
 │   ├── game-infrastructure/     # PostgreSQL / jOOQ / 外部服务
 │   └── game-server/             # Spring Boot / REST / Auth
 │
@@ -98,6 +115,7 @@ TextualCultivationGame/
 │   ├── techniques/
 │   ├── locations/
 │   ├── realms/
+│   ├── balance/
 │   └── schemas/
 │
 ├── contracts/
@@ -109,13 +127,53 @@ TextualCultivationGame/
 └── docs/
 ```
 
-客户端与后端不同语言，但通过 OpenAPI 契约解耦。
+客户端与后端不同语言，通过 OpenAPI 契约解耦。
 
 ---
 
-# 4. Game Core 是最重要的模块
+# 4. Game Engine 分层
 
-`server/game-core` 必须保持纯 Java。
+## 4.1 game-domain
+
+负责：
+
+- RunState
+- AnchorState
+- MetaState
+- CharacterState
+- WorldState
+- NPC State
+- Value Object
+- Domain Event
+
+不得依赖：
+
+- Spring
+- LiteFlow
+- HTTP
+- PostgreSQL
+- jOOQ
+
+## 4.2 game-core
+
+`server/game-core` 保存真正的游戏规则。
+
+负责：
+
+```text
+修炼
+突破
+战斗
+风险
+事件条件 / Effect
+事件调度
+确定性随机
+NPC / 关系 / 因果
+Knowledge / Insight
+回溯
+固道
+结算
+```
 
 不得直接依赖：
 
@@ -128,57 +186,78 @@ TextualCultivationGame/
 - 短信 SDK
 - AI Provider
 
-Game Core 只处理：
+领域算法不得堆入 Controller、Application Service 或 LiteFlow Node。
 
-```text
-输入：当前游戏状态 + 玩家动作 + 内容定义 + 随机上下文
+## 4.3 game-flow
 
-输出：
-- 新游戏状态
-- 状态变化列表
-- 事件结果
-- 日志事件
-- 下一步可选行动
-```
+`server/game-flow` 使用 LiteFlow。
 
-概念接口：
+负责：
 
-```java
-public interface GameEngine {
-    GameActionResult execute(GameState state, GameAction action, GameContext context);
-}
-```
+- 游戏行动流程编排
+- LiteFlow NodeComponent
+- Chain
+- GameFlowContext
+- 流程分支
+- 调用 game-core Resolver
 
-游戏核心模块建议包含：
-
-```text
-game-core
-├── time
-├── cultivation
-├── event
-├── random
-├── combat
-├── risk
-├── npc
-├── relation
-├── karma
-├── inventory
-├── equipment
-├── technique
-├── location
-├── secretrealm
-├── timeline
-├── anchor
-├── rewind
-├── knowledge
-├── insight
-├── solidification
-└── settlement
-```
+允许依赖 LiteFlow，但不得直接访问数据库。
 
 ---
 
-# 5. 状态模型
+# 5. LiteFlow 流程编排
+
+LiteFlow 正式作为 Game Engine 的流程编排层。
+
+适合编排：
+
+```text
+CULTIVATE
+BREAKTHROUGH
+COMBAT
+EXPLORE
+SECRET_REALM_EXPLORE
+EVENT_RESOLVE
+RUN_SETTLEMENT
+SOLIDIFICATION
+REWIND
+```
+
+例如“闭关 30 日”：
+
+```text
+THEN(
+    validateCultivation,
+    consumeCultivationResources,
+    advanceTime,
+    calculateCultivation,
+    updateBodyState,
+    increaseEventPressure,
+    scheduleEvent,
+    resolveTriggeredEvent,
+    checkRunTermination,
+    buildActionResult
+)
+```
+
+但以下内容不交给 LiteFlow：
+
+- 几百 / 几千个具体随机事件
+- Event Condition / Effect 数据
+- 确定性随机算法
+- 修炼 / 战斗具体公式
+- Game State 真相
+- 数据持久化
+
+具体随机事件继续由数据驱动 Event Engine 管理。
+
+详细规则见：
+
+> `docs/16-liteflow-game-flow-orchestration.md`
+
+---
+
+# 6. 状态模型
 
 必须维持四层概念：
 
@@ -196,7 +275,7 @@ Meta State
 跨世状态
 ```
 
-## 5.1 Anchor State
+## 6.1 Anchor State
 
 至少包含：
 
@@ -210,7 +289,7 @@ Meta State
 - 关系 / 因果
 - 世界事件状态
 
-## 5.2 Run State
+## 6.2 Run State
 
 从 Anchor 复制得到，并在当前一世持续变化。
 
@@ -218,6 +297,9 @@ Meta State
 
 - runSeed
 - actionSequence
+- ruleVersion
+- contentVersion
+- balanceVersion
 - 当前角色状态
 - 当前世界状态
 - NPC 状态
@@ -227,7 +309,7 @@ Meta State
 - 伤势 / 中毒
 - 世界线偏移
 
-## 5.3 Meta State
+## 6.3 Meta State
 
 默认持久化：
 
@@ -237,11 +319,11 @@ Meta State
 - 天衍资源
 - 成就 / 图鉴
 
-另外允许通过“固道”消耗珍贵资源，从一世中选择一项实体成果固化，详见独立固道设计文档。
+另外允许通过“固道”消耗珍贵资源，从一世中选择一项实体成果固化，详见 `15-cross-life-solidification-system.md`。
 
 ---
 
-# 6. 服务端权威
+# 7. 服务端权威
 
 客户端不得直接计算并保存真实结果。
 
@@ -250,13 +332,17 @@ Meta State
 ```text
 玩家点击：闭关 30 日
          ↓
-POST /api/runs/{runId}/actions
+POST /api/game/runs/{runId}/actions
          ↓
 Application Service
          ↓
 锁定 Run
          ↓
-Game Core 执行
+根据 ruleVersion 选择对应 Flow
+         ↓
+LiteFlow 执行 Chain
+         ↓
+Game Core Resolver 计算真实结果
          ↓
 保存新 RunState
          ↓
@@ -279,7 +365,7 @@ Commit
 
 ---
 
-# 7. 并发与事务
+# 8. 并发与事务
 
 本游戏不是实时 MMO，不需要复杂 Actor Cluster。
 
@@ -303,22 +389,26 @@ BEGIN
 ↓
 加载 RunState
 ↓
-执行 Game Core
+执行 LiteFlow / Game Core
 ↓
-保存 RunState
+得到新 RunState + Mutations + Domain Events
+↓
+持久化
 ↓
 写 ActionLog / EventLog
 ↓
 COMMIT
 ```
 
+LiteFlow Node **不得自行开启事务或直接写数据库**。
+
 同一个 Run 不允许两个行动同时成功提交。
 
-HTTP 请求可以使用 Java Virtual Threads，保持同步编程模型，不引入 Reactor。
+HTTP 请求使用 Java Virtual Threads，保持同步编程模型，不引入 Reactor。
 
 ---
 
-# 8. PostgreSQL 数据策略
+# 9. PostgreSQL 数据策略
 
 采用：
 
@@ -334,7 +424,6 @@ HTTP 请求可以使用 Java Virtual Threads，保持同步编程模型，不引
 ```text
 user
 user_identity
-
 character
 
 game_anchor
@@ -344,10 +433,12 @@ game_meta
 run_action_log
 run_event_log
 
+rule_version
 content_version
+balance_version
 ```
 
-`game_run` 可以包含：
+`game_run` 建议包含：
 
 ```text
 id
@@ -357,6 +448,9 @@ anchor_id
 run_number
 run_seed
 action_sequence
+rule_version
+content_version
+balance_version
 game_time
 status
 character_state JSONB
@@ -373,7 +467,7 @@ version
 
 ---
 
-# 9. 数据访问
+# 10. 数据访问
 
 使用：
 
@@ -402,7 +496,7 @@ Flyway 负责数据库迁移。
 
 ---
 
-# 10. 确定性随机数
+# 11. 确定性随机数
 
 同一 Run 内禁止通过刷新页面改变随机结果。
 
@@ -430,7 +524,7 @@ DROP_ROLL
 NPC_ENCOUNTER
 ```
 
-Game Core 中必须有统一 RandomSource 接口：
+Game Core 中必须有统一 RandomSource：
 
 ```java
 public interface RandomSource {
@@ -439,11 +533,74 @@ public interface RandomSource {
 }
 ```
 
-禁止各模块直接 `new Random()` 或使用不可追踪的随机源。
+禁止任何模块，包括 LiteFlow Node，直接使用：
+
+```java
+new Random()
+Math.random()
+ThreadLocalRandom.current()
+```
 
 ---
 
-# 11. 内容系统
+# 12. 三版本锁定机制
+
+每个 Run 创建时必须绑定：
+
+```text
+ruleVersion
+contentVersion
+balanceVersion
+```
+
+## ruleVersion
+
+负责：
+
+- LiteFlow Chain 版本
+- Game Core 规则兼容版本
+
+## contentVersion
+
+负责：
+
+- 事件
+- NPC
+- 功法
+- 物品
+- 地点
+- 秘境
+
+## balanceVersion
+
+负责：
+
+- 数值
+- 权重
+- 修炼速度
+- 事件压力
+- 战斗参数
+
+进行中的 Run 必须继续使用创建时绑定的版本。
+
+LiteFlow 即使支持热刷新，也不得静默改变已有 Run 的规则。
+
+正确策略：
+
+```text
+Rule V3 已有 Run
+      ↓
+发布 Rule V4
+      ↓
+旧 Run 继续 V3
+新 Run 使用 V4
+```
+
+严重 BUG 使用显式 Migration 处理。
+
+---
+
+# 13. 内容系统
 
 游戏内容存放于仓库 `content/`，不把所有事件手工录入数据库。
 
@@ -456,6 +613,7 @@ items
 techniques
 locations
 realms
+balance
 ```
 
 使用 YAML / JSON。
@@ -476,13 +634,11 @@ Content Version
 Server Load
 ```
 
-内容必须版本化。
-
-一个 Run 创建后绑定 `contentVersion`，避免版本升级导致进行中的一世突然改变规则。
+一个 Run 创建后绑定 `contentVersion`。
 
 ---
 
-# 12. Event Engine
+# 14. Event Engine
 
 事件引擎由两部分组成：
 
@@ -491,7 +647,7 @@ Event Eligibility
 事件是否可进入池
 
 Event Scheduler
-从当前可用事件中进行调度
+从当前可用事件中调度
 ```
 
 条件必须结构化：
@@ -532,11 +688,48 @@ TriggerEvent
 KillCharacter
 ```
 
+具体事件不得批量转换为 LiteFlow Chain。
+
+LiteFlow 的 `resolveEvent` Node 只负责调用 Event Engine。
+
 不得让脚本文本直接修改数据库。
 
 ---
 
-# 13. 账号与登录
+# 15. LiteFlow Chain 管理
+
+V0.1 推荐 Chain 随代码仓库版本管理：
+
+```text
+server/game-flow/src/main/resources/flows/
+├── v1/
+│   ├── cultivation.xml
+│   ├── breakthrough.xml
+│   ├── combat.xml
+│   ├── exploration.xml
+│   ├── settlement.xml
+│   └── rewind.xml
+└── ...
+```
+
+V0.1 暂不引入：
+
+- Nacos
+- Apollo
+- ZooKeeper
+- 独立规则配置中心
+
+约束：
+
+- Chain 尽量短。
+- Node 使用稳定语义命名。
+- 数值平衡不写死在 Chain。
+- 不使用大量动态脚本承载核心游戏规则。
+- 不允许运行时用户输入生成 EL。
+
+---
+
+# 16. 账号与登录
 
 支持：
 
@@ -562,7 +755,7 @@ User
 
 ---
 
-# 14. API
+# 17. API
 
 采用 REST。
 
@@ -595,9 +788,9 @@ GET  /api/game/life-records
 
 ---
 
-# 15. AI
+# 18. AI
 
-AI 不在 Game Core 中。
+AI 不参与权威 Game Core 结算。
 
 服务器提供：
 
@@ -607,7 +800,7 @@ public interface NarrativeProvider {
 }
 ```
 
-可以实现：
+实现可包括：
 
 ```text
 TemplateNarrativeProvider
@@ -615,25 +808,27 @@ OpenAiNarrativeProvider
 OtherModelProvider
 ```
 
-规则：
+LiteFlow 2.16 系列虽然提供 AI Agent 编排能力，但 V0.1 不使用 Agent 作为权威规则节点。
 
-- AI 只能读取已结算状态。
-- AI 不决定真实奖励。
-- AI 不决定死亡。
-- AI 不修改 RunState。
-- AI 调用失败时必须可以退化成模板文本。
+AI 规则：
 
-因此没有模型服务，游戏仍完整可玩。
+- 只能读取已结算状态。
+- 不决定真实奖励。
+- 不决定死亡。
+- 不修改 RunState。
+- 调用失败必须退化成模板文本。
+
+未来如接入 LiteFlow Agent，只允许位于 Narrative / Content 辅助链路。
 
 ---
 
-# 16. 测试策略
+# 19. 测试策略
 
-## 16.1 Game Core
+## 19.1 game-core
 
 纯单元测试为主。
 
-必须重点覆盖：
+重点覆盖：
 
 - 修炼
 - 突破
@@ -647,9 +842,32 @@ OtherModelProvider
 - 世界线偏移
 - 确定性 RNG
 
-Game Core 测试不得启动 Spring Context。
+不得启动 Spring Context。
 
-## 16.2 Application / Persistence
+## 19.2 game-flow
+
+固定：
+
+```text
+GameState
+GameAction
+runSeed
+ruleVersion
+contentVersion
+balanceVersion
+```
+
+执行 Chain，验证：
+
+- Node 顺序
+- IF / SWITCH 分支
+- Mutation
+- Domain Event
+- 最终状态
+
+同样输入重复执行，结果必须一致。
+
+## 19.3 Application / Persistence
 
 使用 Testcontainers + PostgreSQL。
 
@@ -660,14 +878,15 @@ Game Core 测试不得启动 Spring Context。
 - 回滚
 - JSONB 保存恢复
 - Anchor / Run / Meta 一致性
+- rule/content/balance version 锁定
 
-## 16.3 HTTP
+## 19.4 HTTP
 
 V0.1 使用真实 HTTP 集成测试覆盖关键链路。
 
 ---
 
-# 17. 多端策略
+# 20. 多端策略
 
 第一阶段发布顺序：
 
@@ -687,7 +906,7 @@ Tauri Desktop
 
 ---
 
-# 18. V0.1 部署
+# 21. V0.1 部署
 
 初期只需要：
 
@@ -706,56 +925,45 @@ Tauri Desktop
 - MQ
 - Kubernetes
 - Service Mesh
+- Rule Config Center
 
-等真实负载证明需要时再增加。
+等真实负载或运营需求证明需要时再增加。
 
 ---
 
-# 19. 当前版本基线
+# 22. 当前技术基线总结
 
 截至 2026-08：
 
-- Java 25 为 LTS 基线。
-- Spring Boot 4.1.x 为当前主线，项目固定使用 4.1 系列稳定补丁版本。
-- jOOQ 使用 3.21 系列稳定版本。
-
-依赖版本统一由 Maven parent 管理，不允许子模块各自漂移。
-
----
-
-# 20. 技术不变量
-
-后续开发必须保持：
-
-1. Game Core 不依赖 Spring。
-2. 服务端拥有权威状态。
-3. 客户端不重复实现核心规则。
-4. 所有随机结果可复现。
-5. Run 行动必须事务化。
-6. 内容必须版本化和校验。
-7. AI 不得修改真实游戏状态。
-8. 第一阶段保持模块化单体。
-9. 不因为“未来可能需要”提前增加 Redis、MQ、微服务或 K8s。
-10. API 通过 OpenAPI 对客户端暴露稳定契约。
-
----
-
-# 21. 结论
-
-最终技术主线：
-
 ```text
+Client
 uni-app x + Vue 3 + TypeScript
-              │
-            REST
-              │
-Java 25 + Spring Boot 4.1
-              │
-       Pure Java Game Core
-              │
+
+Desktop
+Tauri 2
+
+Server
+Java 25 LTS + Spring Boot 4.1.x
+
+Flow Orchestration
+LiteFlow 2.16.1
+
+Game Rules
+自研 Java Game Core
+
+Event
+自研 Event Engine + Event Scheduler
+
+Random
+Deterministic Random
+
+Persistence
 PostgreSQL + jOOQ + Flyway
+
+API
+REST + OpenAPI
 ```
 
-这一方案的核心优势不是单纯性能，而是：
+最终原则：
 
-> **复杂修仙规则可以长期清晰建模，同时保持多端客户端简单、服务端权威、内容可持续扩展。**
+> **Spring Boot 负责服务外壳，LiteFlow 负责编排，自研 Game Core 负责规则，Event Engine 负责内容，PostgreSQL 负责状态。**
