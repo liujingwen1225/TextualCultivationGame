@@ -1,0 +1,5 @@
+interface:
+  display_name: "Triage"
+  short_description: "Turn raw incoming issues into durable next states"
+policy:
+  allow_implicit_invocation: false

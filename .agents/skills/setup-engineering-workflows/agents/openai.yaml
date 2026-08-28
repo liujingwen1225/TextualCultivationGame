@@ -1,0 +1,5 @@
+interface:
+  display_name: "Setup Engineering Workflows"
+  short_description: "Verify project engineering workflow conventions"
+policy:
+  allow_implicit_invocation: false

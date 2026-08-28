@@ -1,0 +1,5 @@
+interface:
+  display_name: "To Spec"
+  short_description: "Turn settled context into a buildable spec"
+policy:
+  allow_implicit_invocation: false

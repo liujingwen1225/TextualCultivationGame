@@ -1,0 +1,5 @@
+interface:
+  display_name: "Grill with Docs"
+  short_description: "Grill a design and update project domain docs"
+policy:
+  allow_implicit_invocation: false
