@@ -12,12 +12,15 @@
 | 02 | `02-cultivation-character.md` | 境界、修炼、属性、功法、术法、神通、伤势与寿元 |
 | 03 | `03-combat-build.md` | RTwP 战斗、位置、Build、资源、伤势与战斗边界 |
 | 04 | `04-world-npc-events.md` | 世界时间、地图、NPC、关系、势力、经济、事件与情报 |
-| 05 | `05-v0.1-vertical-slice.md` | 第一阶段连续人生纵切范围与验收目标 |
+| 05 | `05-v0.1-vertical-slice.md` | 第一阶段连续人生纵切范围、内容预算与双验收门 |
 | 06 | `06-technical-baseline.md` | Godot + C# 技术基线与硬约束 |
-| 07 | `07-runtime-architecture.md` | Game Core / Application / Godot / Content / Save 分层 |
+| 07 | `07-runtime-architecture.md` | GameSession / Core / World Time / Combat / Event 运行时边界 |
 | 08 | `08-ui-ux-direction.md` | 桌面交互、HUD、面板和信息呈现原则 |
 | 09 | `09-visual-style.md` | 纯 2D 东方修仙像素视觉基线 |
 | 10 | `10-project-status.md` | 当前阶段、已锁定、待设计、开发禁令和下一步 |
+| 11 | `11-godot-project-architecture.md` | Godot Host、纯 C# modules、Scene / Node 与 GameSession 工程边界 |
+| 12 | `12-content-data-architecture.md` | JSON Gameplay Content、Definition / State、Stable ID 与 Validation |
+| 13 | `13-test-architecture.md` | L0～L4、Scenario Runner、Headless 与诊断输出测试架构 |
 
 根目录：
 
@@ -69,18 +72,32 @@ Agent 约束：
 
 ## 当前技术一句话
 
-> **Godot 4.7.x .NET + C# + .NET 8 + 纯 2D；权威规则在纯 C# Game Core，Godot 负责表现、输入与适配。**
+> **Godot 4.7.x .NET + C# + .NET 8 + 纯 2D；权威规则在纯 C# Game Core，Godot 负责表现、输入与适配，Godot 与无画面 Scenario 通过同一 GameSession 驱动规则。**
 
 ## 当前阶段
 
 当前仍处于设计与架构收口期。
 
-禁止直接从旧 Spec / Issues 开始正式开发。必须先完成：
+已完成本轮：
 
 ```text
 文档一致性清理
-→ V0.1 连续人生纵切收口
-→ 运行时 / Godot / 内容数据 / 测试架构校准
-→ 设计审查
+→ V0.1 连续人生纵切收紧
+→ 运行时边界校准
+→ Godot 工程架构设计
+→ 内容数据架构设计
+→ 自动化测试架构设计
+```
+
+进入 Spec 前仍需：
+
+```text
+V0.1 具体玩法参数 / 黑水内容收口
+→ RTwP 具体交互规则收口
+→ Save / AutoSave 策略收口
+→ 全部当前文档最终一致性审查
+→ V0.1 范围最终审查
 → 再进入 Spec
 ```
+
+禁止直接从旧 Spec / Issues 开始正式开发。
