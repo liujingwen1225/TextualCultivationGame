@@ -7,6 +7,12 @@ on:
     paths:
       - 'spikes/**'
       - '.github/workflows/engine-spike.yml'
+  pull_request:
+    branches:
+      - redesign/steam-pixel-rpg
+    paths:
+      - 'spikes/**'
+      - '.github/workflows/engine-spike.yml'
   workflow_dispatch:
 
 jobs:
