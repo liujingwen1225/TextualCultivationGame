@@ -1,187 +1,248 @@
 # 诸世问道：游戏引擎选型决策
 
-> 状态：待最终决策
+> 状态：**已锁定**
 >
-> 候选仅保留：**Java + libGDX** 与 **Godot + C#**。
+> 最终选择：**Godot 4.7.2 .NET + C# + 纯 2D**。
 
-## 1. 选型前提
+## 1. 决策
 
-产品方向已经锁定：
+《诸世问道》正式采用：
+
+```text
+Godot 4.7.2 .NET
++
+C# / .NET 8
++
+纯 2D
++
+Steam / Windows 优先
+```
+
+不再继续维护 Java + libGDX、Unity / 团结引擎、Cocos Creator 的正式候选实现。
+
+## 2. 决策前提
+
+当前产品方向已经锁定：
 
 ```text
 Steam / Windows 优先
 东方修仙像素人生模拟 Roguelite RPG
-真实地图探索
+真实 2D 像素地图探索
 事件驱动内容
 单机本地权威运行时
 AI / Codex 自动开发与测试
 ```
 
-因此引擎选择不再考虑微信、小程序、App 跨端统一。
+首版不追求 HD-2D 或 3D 场景，也不以 Web / 小程序 / App 多端统一作为技术约束。
 
-## 2. 评估维度
+## 3. 为什么选择 Godot + C#
 
-按本项目重要性排序：
+### 3.1 纯 2D 与当前产品形态一致
 
-1. 一个人 + AI 的长期开发效率。
-2. 像素地图 / 场景制作效率。
-3. CLI 构建与自动化能力。
-4. Scenario / Headless Test 能力。
-5. 核心规则与渲染解耦难度。
-6. UI / 动画 / 粒子制作成本。
-7. Windows / Steam 打包能力。
-8. Steam Deck / Linux 后续支持。
-9. 资产工具链与社区生态。
-10. 引擎长期维护风险。
+项目核心表现是：
 
-## 3. Java + libGDX
+- TileMapLayer 地图；
+- Sprite2D / AnimatedSprite2D 角色与 NPC；
+- 2D 碰撞与导航；
+- 2D 灯光、雾、粒子和 Shader；
+- Control UI；
+- 俯视 / 斜俯视像素世界。
 
-### 优势
+Godot 的原生 2D 工作流可以直接覆盖这些需求，不需要为了当前 V0.1 引入 3D 或 HD-2D 制作复杂度。
 
-- 保留 Java 技术优势。
-- Gradle / CLI 工程非常直接。
-- AI / Codex 易于修改、编译、测试。
-- Game Core 可以保持纯 Java。
-- 2D 像素渲染能力成熟。
-- 桌面端基于 LWJGL，适合 Steam 游戏。
-- 不强制依赖可视化编辑器。
-- Headless / Scenario Test 架构容易设计。
+### 3.2 地图与场景制作效率高于纯代码框架
 
-### 成本
+《诸世问道》的核心规则复杂，但产品已经明确要求玩家真实移动、进入地图、接触 NPC、调查、战斗和探索。
 
-- 地图、场景、动画、粒子等需要自己组织更多工程能力。
-- 没有 Godot 那种统一可视化 Scene 编辑体验。
-- UI、地图工具、资源管线需要更多代码和第三方工具组合。
-- 如果后续转向大量 2.5D / 3D，会明显增加自研成本。
+长期开发成本不仅来自规则代码，还来自：
 
-### 更适合的项目形态
+- 地图编辑；
+- 碰撞与交互点；
+- NPC 摆放；
+- UI；
+- 动画；
+- 粒子与光影；
+- 场景切换；
+- 视觉 Smoke 验证。
+
+Godot 的 Scene / Node / TileMapLayer 工作流可以减少这些重复基础设施建设。
+
+### 3.3 C# 适合承载复杂领域规则
+
+核心系统继续使用强类型 C# 实现：
 
 ```text
-2D 像素为主
-系统深度优先
-代码驱动
-地图规模有限
-AI 自动开发优先
+World
+Life
+Anchor
+Knowledge
+Trait
+Cultivation
+Event Engine
+Combat
+Save
+Deterministic Random
 ```
 
-这与当前《诸世问道》方向高度匹配。
+选择 Godot 不意味着把规则写进 Node。
 
-## 4. Godot + C#
-
-### 优势
-
-- Scene / Node 模型适合地图与对象编辑。
-- TileMap、动画、粒子、灯光、相机、UI 集成度更高。
-- 视觉迭代速度通常高于纯代码框架。
-- 未来增加 2.5D / 3D 表现更自然。
-- 编辑器内可快速制作和调整地图。
-
-### 成本
-
-- 工作流更依赖 Godot 编辑器与场景资源。
-- AI 可以写 C#，但地图 / Scene 的高质量调整不完全等价于纯文本代码修改。
-- 需要严格防止规则逻辑散落到 Node / Scene Script。
-- C# 与 Godot 生态结合需要额外约束和工程规范。
-
-### 更适合的项目形态
+正式架构要求：
 
 ```text
-视觉制作占比更高
-地图与场景编辑频繁
-粒子 / 动画 / 灯光很多
-未来可能强化 2.5D
+Godot Scene / UI
+       ↓
+Game Application
+       ↓
+纯 C# Game Core + Event Engine + Combat
+       ↓
+Save / Content / Platform Adapters
 ```
 
-## 5. 当前项目倾向
+Game Core 不依赖 Godot 场景树、渲染 API、输入 API 或 Steamworks。
 
-按当前产品范围：
+### 3.4 自动化能力满足项目要求
+
+Godot 必须通过 CLI / headless 参与开发闭环：
 
 ```text
-像素 2D
-小世界高内容密度
-系统 / 事件 / 多世规则非常重
-战斗不是主要卖点
-一人 + AI 开发
-强 CLI / 自动测试要求
+Codex 修改
+→ dotnet build / test
+→ Scenario Test
+→ Godot --headless 运行时测试
+→ 日志 / 状态 / 截图
+→ 修复
+→ 回归
 ```
 
-**当前倾向：Java + libGDX。**
+黑水三世 Scenario Test 必须脱离渲染执行。
 
-原因不是 Java 本身，而是该方案更符合当前核心成本结构：
+## 4. Spike 结论
 
-> 规则和内容复杂度远高于场景技术复杂度。
+引擎 Spike 已证明两个候选都可以实现纯规则 Scenario；libGDX 的 CLI / Headless 路径成立，Godot 的纯 C# Core、Scenario 与 Godot Host Build 也已经成立。
 
-如果后续视觉原型证明以下需求成为核心：
+最终不再继续用加权评分决定产品方向，原因是产品需求在 Spike 后进一步明确为：
 
-- 大量动态灯光。
-- 复杂粒子。
-- 2.5D 场景。
-- 高频可视化关卡编辑。
-- 场景演出成为主要卖点。
+> **纯 2D、可探索地图、频繁场景编辑、视觉表现与系统规则并重。**
 
-则重新评估 Godot + C#。
+在这个前提下，Godot 的地图 / Scene / UI / 动画 / 粒子生产效率带来的长期收益高于继续维护纯代码渲染框架的收益。
 
-## 6. 最终 Spike
+`spike/engine-selection` 只保留为历史技术验证，不作为正式 V0.1 代码基线。
 
-正式锁定前只做一个技术 Spike，不做完整功能。
+## 5. 正式技术边界
 
-同一内容分别验证候选的关键成本：
+### Presentation / Scene
+
+允许依赖 Godot：
+
+- Node / Node2D；
+- TileMapLayer；
+- CharacterBody2D；
+- Sprite2D / AnimatedSprite2D；
+- Camera2D；
+- Control；
+- Light2D；
+- GPUParticles2D；
+- Audio；
+- 输入与 Scene 生命周期。
+
+### Game Core
+
+禁止依赖 Godot：
+
+- Anchor / Life / Knowledge / Trait；
+- 修炼与时间；
+- Event Condition / Effect；
+- NPC / World 权威状态；
+- 承世 / 悟世；
+- 确定性随机；
+- 核心战斗规则；
+- SaveGame 领域模型。
+
+### Application
+
+负责把 Godot 输入和场景交互转换成高层命令，例如：
 
 ```text
-青玄宗小地图
-1 个可移动主角
-1 个 NPC
-1 个交互点
-1 个事件弹层
-1 个简单战斗 / 伤害反馈
-1 个 Save / Load
-1 个 Headless Scenario
+Interact
+Investigate
+Cultivate
+Travel
+StartCombat
+ChooseEventOption
+CommitSuicide
+SelectAnchor
+Inherit
+RealizeTrait
+StartNextLife
 ```
 
-Spike 验收：
+UI / Scene 不能直接修改权威游戏状态。
 
-- AI 能从 CLI 构建。
-- AI 能运行测试。
-- AI 能定位失败并修改。
-- 地图制作不需要大量手工重复劳动。
-- 像素画面不出现明显缩放 / 抖动问题。
-- 事件规则不依赖表现层。
-- Windows 构建可独立运行。
+## 6. V0.1 默认 Godot 能力
 
-## 7. 决策规则
-
-如果 libGDX Spike 能达到：
+V0.1 优先使用：
 
 ```text
-地图制作成本可接受
-+
-自动化明显更顺畅
-+
-视觉目标足够
+TileMapLayer
+CharacterBody2D
+Area2D
+AnimatedSprite2D
+Camera2D
+Control
+Light2D
+GPUParticles2D
+Resource / JSON 内容定义
 ```
 
-则锁定 Java + libGDX。
+不因为引擎能力丰富而扩大 V0.1：
 
-如果地图 / 动画 / 视觉制作成为明显瓶颈，而 Godot 能显著降低该成本，则锁定 Godot + C#。
+- 不做 3D；
+- 不做 HD-2D；
+- 不做大型开放世界；
+- 不做复杂动作战斗；
+- 不做运行时 AI NPC Agent；
+- 不做完整内容编辑器。
 
-## 8. 当前结论
-
-现在不要同时维护两个实现。
-
-流程应为：
+## 7. 测试基线
 
 ```text
-完成设计重构
+L1 纯 C# Unit Test
+L2 黑水三世 Scenario Test
+L3 Godot Headless / Runtime Integration
+L4 Scene / Input / Screenshot Smoke
+```
+
+任何正式实现票都不能把“需要人工打开编辑器点击确认”作为唯一验收方式。
+
+## 8. 被淘汰方向
+
+以下方向退出当前正式基线：
+
+- Java + libGDX；
+- Unity / 团结引擎；
+- Cocos Creator；
+- uni-app x / H5 / 小程序首发；
+- Spring Boot + REST 游戏运行时；
+- PostgreSQL 首版本地存档；
+- LiteFlow 游戏流程编排；
+- HD-2D / 3D 作为首版视觉目标。
+
+## 9. 后续顺序
+
+引擎决策完成后，项目进入：
+
+```text
+更新技术基线与运行时文档
 ↓
-做最小 Engine Spike
+清理 Agent / Spec 工作流中的旧 Web / PostgreSQL 假设
 ↓
-锁定唯一引擎
+grill-with-docs 一致性检查
 ↓
-更新 06 技术基线
+to-spec
 ↓
-重新生成 V0.1 Issues / Tickets
+to-tickets
 ↓
-开始正式开发
+blockers-first 正式实现
 ```
 
-在 Spike 之前，架构文档保持引擎中立。
+从本决策开始，除非出现已验证的硬阻塞，不再重复进行引擎选型。
