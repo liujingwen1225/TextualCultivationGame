@@ -24,18 +24,18 @@
 客户端：
 
 - **uni-app x + Vue 3 + TypeScript** 作为正式客户端技术基线。
-- V0.1 首个实际运行和 E2E 验收目标为 Web。
+- V0.1 首个实际运行和 E2E 验收目标为 **H5（Web）**。
 - 微信小程序作为首个跨端发布 / 回归目标。
 - Android / iOS / HarmonyOS 在核心玩法稳定后逐端验收。
-- 桌面端首阶段直接使用 Web；独立桌面客户端如有真实需求再评估 Tauri。
+- 桌面端首阶段直接使用 H5（Web）；独立桌面客户端如有真实需求再评估 Tauri。
 
 客户端开发方式：
 
 - 日常代码编辑由 VS Code / Cursor / Codex 等通用开发环境完成，不把 HBuilderX 作为主 IDE。
-- 项目从 V0.1 起直接使用 uni-app x 工程，不先维护一套独立 Web 前端再迁移。
+- 项目从 V0.1 起直接使用 uni-app x 工程，不先维护一套独立 Vue/Vite H5（Web）前端再迁移。
 - 编译、运行、日志读取和跨端自动化优先通过 **HBuilderX CLI / `@dcloudio/hbuilderx-cli`** 调用。
 - HBuilderX 作为 uni-app x 必要工具链存在，用于编译器、平台运行环境、插件与发行能力，不作为人工开发流程的中心。
-- AI 开发必须能够通过 CLI 启动 Web、读取运行日志并执行自动化测试，形成“修改 → 运行 → E2E → 修复 → 回归”闭环。
+- AI 开发必须能够通过 CLI 启动 H5（Web）、读取运行日志并执行自动化测试，形成“修改 → 运行 → E2E → 修复 → 回归”闭环。
 
 原则：
 
@@ -305,7 +305,7 @@ V0.1 不需要内容后台管理系统。
 
 ## 10. 幂等与客户端重试
 
-移动端和 H5 都可能重复请求。
+移动端和 H5（Web）都可能重复请求。
 
 关键命令需要：
 
@@ -414,7 +414,7 @@ AI / Codex 修改代码
   ↓
 CLI 启动 Java Server
   ↓
-CLI 启动 uni-app x Web
+CLI 启动 uni-app x H5（Web）
   ↓
 Playwright / uni-app 自动化执行 E2E
   ↓
@@ -425,7 +425,7 @@ Playwright / uni-app 自动化执行 E2E
 再次回归
 ```
 
-Web 是 V0.1 的主 E2E 平台，核心玩法链路必须能够无人工点击完成。
+H5（Web）是 V0.1 的主 E2E 平台，核心玩法链路必须能够无人工点击完成。
 
 首批 E2E 至少覆盖：
 
@@ -449,7 +449,7 @@ Web 是 V0.1 的主 E2E 平台，核心玩法链路必须能够无人工点击�
 跨端测试分级：
 
 ```text
-P0  Web
+P0  H5（Web）
     每个开发 Batch / PR 必跑完整核心 E2E
 
 P1  微信小程序
@@ -485,7 +485,7 @@ P2  Android / iOS / HarmonyOS
 客户端测试分为：
 
 - 页面 / 组件级必要测试。
-- Web 核心 Playwright E2E。
+- H5（Web）核心 Playwright E2E。
 - uni-app x 官方自动化用于微信、Android、iOS、HarmonyOS 的跨端回归。
 
 最终验收以真实可运行结果为准，不以“代码已生成”作为完成标准。
