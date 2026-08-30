@@ -3,8 +3,10 @@
     <TargetFramework>net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>Zhushi.EngineSpike.Godot</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Main.cs" />
     <ProjectReference Include="core/SpikeCore.csproj" />
   </ItemGroup>
 </Project>
