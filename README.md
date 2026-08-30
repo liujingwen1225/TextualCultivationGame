@@ -129,7 +129,7 @@ V0.1 暂不把以下内容作为验收条件：多大境界 Anchor、真实支�
 
 ```text
 uni-app x + Vue 3 + TypeScript
-  ├─ V0.1 主验收：Web
+  ├─ V0.1 主验收：H5（Web）
   ├─ 首个跨端目标：微信小程序
   └─ 后续：Android / iOS / HarmonyOS
           ↓ REST
@@ -147,20 +147,20 @@ PostgreSQL + MyBatis-Flex + Flyway
 
 正式数据访问基线为 **MyBatis-Flex**，不再使用 jOOQ。普通 CRUD / 查询优先使用 BaseMapper 与 QueryWrapper；只有行锁、JSONB 特殊操作、复杂统计等必要场景才直接写 SQL。
 
-客户端从 V0.1 起直接使用 **uni-app x** 工程，不先开发一套独立 Web 客户端再迁移。日常编辑不依赖 HBuilderX，可使用 VS Code / Cursor / Codex；编译、运行、日志和跨端自动化通过 **HBuilderX CLI / `@dcloudio/hbuilderx-cli`** 接入。
+客户端从 V0.1 起直接使用 **uni-app x** 工程，不先开发一套独立 Vue/Vite H5（Web）客户端再迁移。日常编辑不依赖 HBuilderX，可使用 VS Code / Cursor / Codex；编译、运行、日志和跨端自动化通过 **HBuilderX CLI / `@dcloudio/hbuilderx-cli`** 接入。
 
 AI 开发要求形成闭环：
 
 ```text
 修改代码
 → CLI 启动前后端
-→ Web E2E
+→ H5（Web）E2E
 → 读取日志
 → 修复
 → 再次回归
 ```
 
-Web 是开发期完整 E2E 主平台；微信小程序作为首个跨端 smoke / 回归平台，Android / iOS / HarmonyOS 在进入发行范围后再加入回归矩阵。
+H5（Web）是开发期完整 E2E 主平台；微信小程序作为首个跨端 smoke / 回归平台，Android / iOS / HarmonyOS 在进入发行范围后再加入回归矩阵。
 
 LiteFlow 不拥有事件规则，Event Engine 不承担业务流程编排。V0.x 保留 rule/content/balance 版本字段，但不维护多代 Java 规则运行时；开发期重大规则变更允许迁移或使旧 Run 失效。
 
