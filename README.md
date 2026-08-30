@@ -58,6 +58,7 @@ NPC / 人物关系
 - 功法决定长期修炼路线；术法决定力量使用方式；神通是高阶规则能力。
 - 灵根、体质、根骨、悟性、神魂等共同塑造修炼路线，不采用传统力量/敏捷/智力六维模板。
 - 气血、法力、神识是核心运行资源；寿元是长期战略资源。
+- 修炼不是独立经验按钮，而会与调查、交易、社交和世界机会争夺时间。
 
 ## 战斗
 
@@ -67,6 +68,38 @@ NPC / 人物关系
 - 玩家完全控制主角；盟友采用简化战术与有限指令。
 - 战斗强调术法、法宝、消耗品、伤势、时间与准备，不做动作游戏式精准闪避/连招。
 - 合理的境界压制和致命术法可以造成一击致死，但不使用无意义随机猝死。
+
+## V0.1 连续人生纵切
+
+V0.1 使用沈川作为固定炼气期角色，验证：
+
+```text
+青玄宗生活
+→ 修炼 / 时间取舍
+→ 发现黑水机会
+→ 调查
+→ 宗门身份 / 资源约束
+→ 青石坊市准备
+→ 黑水山探索
+→ RTwP 战斗
+→ 黑水秘境
+→ 揭开一层隐藏真相
+→ 返回宗门
+→ 可玩的事件余波
+→ 新机会 / 新限制继续出现
+```
+
+当前内容预算：
+
+- 首次完整游玩约 45～75 分钟。
+- 3 个核心 NPC 为基线，最多 5 个有内容价值的 NPC。
+- 4 类最小语义区域，不扩大为大型地图。
+- 1 条主要调查链。
+- 1 个真正有代价的修炼选择。
+- 1 条体现外门弟子身份的宗门制度约束。
+- 黑水后保留 5～10 分钟可玩事件余波。
+
+V0.1 同时需要通过 **Player Experience Gate** 与 **Technical Confidence Gate**；自动化测试全绿不能替代“是否好玩”的产品验收。
 
 ## 技术基线
 
@@ -83,18 +116,37 @@ Authority: Local single-player runtime
 
 > **权威规则保持在纯 C# Game Core；Godot Scene / Node 负责表现、输入和适配，不拥有核心规则。**
 
-详细技术方向见 `docs/06-technical-baseline.md` 与 `docs/07-runtime-architecture.md`。
+关键架构结论：
+
+- `GameSession` 是 Godot 与 Scenario Runner 共用的 Application seam。
+- World Time 与 Combat Time 分离。
+- 探索移动可使用 Godot Physics2D；正式战斗规则由纯 C# Combat State 权威处理。
+- Gameplay Content 使用 JSON + `System.Text.Json`，静态 Definition 与动态 State 分离。
+- SaveGame 通过稳定 Definition ID 引用静态内容。
+- 测试架构采用 L0 Build/Content Validation → L1 Core → L2 Scenario → L3 Headless → L4 Visual/Input Smoke。
+
+详细技术方向见：
+
+- `docs/06-technical-baseline.md`
+- `docs/07-runtime-architecture.md`
+- `docs/11-godot-project-architecture.md`
+- `docs/12-content-data-architecture.md`
+- `docs/13-test-architecture.md`
 
 ## 当前阶段
 
 当前阶段仍是 **产品与架构设计收口**，不进入正式 Spec / Tickets / V0.1 开发。
 
-当前工作优先级：
+本轮运行时、Godot 工程、内容数据和测试架构已经完成设计校准。
 
-1. 保证全部文档只表达“正统修仙人生模拟 RPG”方向。
-2. 收口 V0.1 连续人生纵切。
-3. 校准运行时 / Godot 工程 / 内容数据 / 测试架构。
-4. 完成设计一致性审查后，再进入 Spec。
+当前工作优先级转为：
+
+1. 收口黑水事件具体人物、隐藏真相和主要结果路径。
+2. 收口 V0.1 功法 / 术法 / 法宝最小内容。
+3. 收口 RTwP 具体动作时间、暂停、移动、攻击、打断、逃跑规则。
+4. 收口 Save / AutoSave 策略。
+5. 完成全部当前文档最终一致性与 V0.1 范围审查。
+6. 通过后再进入 Spec。
 
 ## 文档
 
