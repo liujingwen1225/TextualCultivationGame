@@ -46,7 +46,7 @@
    - PostgreSQL + MyBatis-Flex + Flyway
    - uni-app x + Vue 3 + TypeScript
    - HBuilderX CLI / `@dcloudio/hbuilderx-cli` 自动化开发链
-   - Web 主 E2E + 微信跨端回归
+   - H5（Web）主 E2E + 微信跨端回归
    - 模块化单体
    - 数据模型原则
    - 版本策略
@@ -118,7 +118,7 @@ CONTEXT.md 领域定义
 - V0.1 同时完成微信、手机号、正式多端发布、真实支付等完整产品基础设施。
 - V0.x 永久并存多代 Java 规则运行时。
 - jOOQ 作为正式数据访问基线。
-- 先维护独立 Web 客户端、后续再迁移到 uni-app x 的双客户端路线。
+- 先维护独立 Vue/Vite H5（Web）客户端、后续再迁移到 uni-app x 的双客户端路线。
 
 ## 当前 UI 不允许恢复的旧方向
 
