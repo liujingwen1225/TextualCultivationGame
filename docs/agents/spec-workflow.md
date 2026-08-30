@@ -1,38 +1,60 @@
 # Specification Workflow
 
-Buildable specifications are published as GitHub Issues using Matt Skills Curated `to-spec` structure.
+Buildable specifications are eventually published as GitHub Issues using the Matt Skills Curated `to-spec` structure.
 
 A spec is ready for implementation decomposition when it contains:
 
 - Problem Statement
 - Solution
-- extensive User Stories
+- User Stories
 - Implementation Decisions
 - Testing Decisions
 - Out of Scope
 - Further Notes
 
-## Redesign / Engine Spike rule
+## Current design-stage rule
 
-`redesign/steam-pixel-rpg` is currently resolving a hard-to-reverse engine choice. Until `docs/10-engine-selection.md` is finalized:
+The project is currently still in product and architecture design consolidation.
 
-- Engine Spike code is an evaluation prototype, not production implementation.
-- Do not mark V0.1 implementation tickets `ready-for-agent` based on the old H5 / Spring Boot architecture.
-- Do not use REST, PostgreSQL, MyBatis-Flex or LiteFlow as the default test seam.
-- A prototype may exist between `grill-with-docs` and `to-spec` only to settle the engine decision.
+Until `docs/10-project-status.md` explicitly moves the project into Spec stage:
 
-## V0.1 primary test seams after engine lock
+- Do not create formal V0.1 implementation specs.
+- Do not generate implementation tickets.
+- Do not mark old multi-life / H5 / Spring Boot issues `ready-for-agent`.
+- Do not start production implementation from historical specs.
+- Small technical experiments are allowed only when they resolve a concrete architecture uncertainty.
 
-The desktop single-player architecture uses layered seams rather than a public HTTP API:
+## Current V0.1 test seams after design lock
 
-1. **Game Core / Application command boundary** — pure rule tests for Anchor, Knowledge, inheritance, traits, time, events and deterministic random.
-2. **Scenario Runner** — drive the complete Blackwater multi-life scenario without rendering, using the same commands and content definitions as the game runtime.
-3. **SaveGame round-trip** — serialize to a temporary local save, reload, and prove authoritative state is preserved.
-4. **Runtime / headless integration** — boot the real engine runtime without human input and execute representative scene/event flows.
-5. **Visual / input smoke** — launch a real game window when the environment supports it, simulate essential input, and capture logs/state/screenshots for verification.
+The target desktop single-player architecture uses layered seams rather than a public HTTP API:
 
-Prefer a small number of high-value scenario tests that cross real domain boundaries. Add narrower unit tests where they make rules easier to understand or failures easier to diagnose.
+1. **Pure C# Game Core tests** — cultivation, world time, NPC/relationship, events, combat, economy, intel, injuries and deterministic rules.
+2. **Continuous-Life Scenario Runner** — drive the Blackwater V0.1 flow without rendering using the same Application commands and content definitions as the game runtime.
+3. **SaveGame round-trip** — serialize current GameState to a temporary local save, reload and prove authoritative state is preserved.
+4. **Godot headless integration** — boot the real engine runtime without human input and execute representative scene/content/core flows.
+5. **Visual / input smoke** — launch a real game window when available, simulate essential input and capture logs/state/screenshots.
 
-Engine-specific Scene/Node/rendering types must not leak into Game Core tests.
+Prefer a small number of high-value scenario tests that cross real domain boundaries. Add focused unit tests where they clarify rules and failure causes.
 
-Specs and implementation tickets should use the `ready-for-agent` state only when no unresolved product or engine decision blocks implementation.
+Godot Scene / Node / rendering types must not leak into pure Game Core tests.
+
+## Historical concepts are invalid test seams
+
+Do not create tests or architecture around:
+
+- Anchor / rewind.
+- inheritance / realization.
+- cross-life Trait or Knowledge.
+- Blackwater three-life scenario.
+- Engine Spike comparison.
+- REST endpoints as the main game acceptance seam.
+
+## Ready-for-agent rule
+
+A spec or implementation ticket may use `ready-for-agent` only when:
+
+- Product behavior is locked.
+- Architecture boundary is locked.
+- Required content/data contract is clear.
+- Test seam is explicit and executable.
+- No active canonical document contradicts it.
