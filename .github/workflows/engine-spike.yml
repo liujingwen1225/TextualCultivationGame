@@ -62,4 +62,8 @@ jobs:
           chmod +x "$GODOT_BIN"
           echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
       - name: Headless runtime smoke
-        run: '"$GODOT_BIN" --headless --path spikes/godot -- --headless-smoke'
+        shell: bash
+        run: |
+          set -o pipefail
+          "$GODOT_BIN" --headless --path spikes/godot --quit-after 300 -- --headless-smoke 2>&1 | tee /tmp/godot-headless.log
+          grep -q 'GODOT_HEADLESS_OK' /tmp/godot-headless.log
