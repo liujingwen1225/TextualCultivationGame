@@ -101,6 +101,13 @@ Anchor / Knowledge / 多世回溯
     - 本重设计分支已锁定 / 已废弃 / 待锁定内容
     - 合并 main 前检查清单
 
+12. `12-engine-spike-spec.md`
+    - libGDX 1.14.2 / Godot 4.7.2 固定版本
+    - 两候选完全相同的最小玩法输入
+    - Game Core / Scene 解耦约束
+    - CLI / Scenario / Headless 验收
+    - 100 分加权评分与硬淘汰条件
+
 ## 文档关系
 
 ```text
@@ -123,7 +130,11 @@ Anchor / Knowledge / 多世回溯
 09 视觉
  ↓
 10 引擎决策
+ ↓
+12 Engine Spike 规格
 ```
+
+`11-redesign-status.md` 记录整个重设计分支的阶段状态，不属于设计依赖链。
 
 ## 设计优先级
 
@@ -134,7 +145,7 @@ Anchor / Knowledge / 多世回溯
   ↓
 CONTEXT.md
   ↓
-01~11 当前有效文档
+01~12 当前有效文档
   ↓
 代码实现
 ```
@@ -189,15 +200,17 @@ CONTEXT.md
 ```text
 完成本分支设计一致性清理
 ↓
-Engine Spike
+按 12-engine-spike-spec 执行 Engine Spike
 ↓
 锁定唯一引擎
 ↓
 更新 06 技术基线
 ↓
-重新生成 V0.1 Issues / Tickets
+to-spec
+↓
+to-tickets
 ↓
 开始正式开发
 ```
 
-在引擎锁定前，不按旧 H5 / Spring Boot Issues 继续开发。
+Engine Spike 属于设计验证原型，不使用旧 GitHub V0.1 Issues 作为实现任务。在引擎锁定前，不按旧 H5 / Spring Boot Issues 继续开发。
