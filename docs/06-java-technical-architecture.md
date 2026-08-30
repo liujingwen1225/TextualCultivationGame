@@ -12,7 +12,7 @@
 - Spring Boot 4.1.x。
 - Spring MVC。
 - PostgreSQL。
-- jOOQ 3.21.x。
+- MyBatis-Flex 1.11.8。
 - Flyway。
 - LiteFlow 2.16.x。
 - JUnit 5。
@@ -21,11 +21,25 @@
 - OpenAPI。
 - Maven。
 
-客户端目标：
+客户端：
 
-- V0.1：Web / H5。
-- 后续：uni-app x + Vue 3 + TypeScript，逐步覆盖微信小程序、移动端和 Web。
-- 桌面端如有需求再评估 Tauri。
+- **uni-app x + Vue 3 + TypeScript** 作为正式客户端技术基线。
+- V0.1 首个实际运行和 E2E 验收目标为 Web。
+- 微信小程序作为首个跨端发布 / 回归目标。
+- Android / iOS / HarmonyOS 在核心玩法稳定后逐端验收。
+- 桌面端首阶段直接使用 Web；独立桌面客户端如有真实需求再评估 Tauri。
+
+客户端开发方式：
+
+- 日常代码编辑由 VS Code / Cursor / Codex 等通用开发环境完成，不把 HBuilderX 作为主 IDE。
+- 项目从 V0.1 起直接使用 uni-app x 工程，不先维护一套独立 Web 前端再迁移。
+- 编译、运行、日志读取和跨端自动化优先通过 **HBuilderX CLI / `@dcloudio/hbuilderx-cli`** 调用。
+- HBuilderX 作为 uni-app x 必要工具链存在，用于编译器、平台运行环境、插件与发行能力，不作为人工开发流程的中心。
+- AI 开发必须能够通过 CLI 启动 Web、读取运行日志并执行自动化测试，形成“修改 → 运行 → E2E → 修复 → 回归”闭环。
+
+原则：
+
+> 客户端只负责交互和表现，服务端拥有全部权威游戏状态与规则。
 
 ## 2. 架构形态
 
@@ -199,7 +213,7 @@ Anchor 是不可变历史状态。
 
 这些属于更高层 Meta。
 
-## 7. 数据库存储
+## 7. 数据库存储与数据访问
 
 PostgreSQL 采用关系字段 + JSONB 混合。
 
@@ -223,6 +237,37 @@ PostgreSQL 采用关系字段 + JSONB 混合。
 - 内容版本绑定信息。
 
 关键业务约束仍应有明确数据库约束，不要把全部状态塞进一个 JSON。
+
+### MyBatis-Flex 使用原则
+
+持久层正式采用 **MyBatis-Flex**，不再使用 jOOQ 作为项目基线。
+
+使用优先级：
+
+```text
+BaseMapper
+  ↓
+QueryWrapper / UpdateChain 等 MyBatis-Flex API
+  ↓
+注解 SQL
+  ↓
+XML / 原生复杂 SQL（仅必要场景）
+```
+
+目标不是完全禁止 SQL，而是让大多数 CRUD、普通条件查询和更新不需要手写 Mapper SQL。
+
+以下场景允许直接使用明确 SQL：
+
+- `SELECT ... FOR UPDATE` 等关键游戏事务锁。
+- PostgreSQL JSONB 的特殊操作。
+- 批量日志 / 统计查询。
+- 用 QueryWrapper 表达会明显降低可读性的复杂查询。
+
+禁止为了“全部使用 QueryWrapper”把简单 SQL 变成难以维护的 DSL。
+
+`domain` / `engine` 不得依赖 MyBatis-Flex 的 Entity、Mapper、QueryWrapper 等类型；持久层对象与游戏领域对象之间通过 repository / mapper adapter 转换。
+
+数据库迁移继续使用 Flyway。
 
 ## 8. 内容存储
 
@@ -254,7 +299,9 @@ V0.1 不需要内容后台管理系统。
 
 可以使用 PostgreSQL 行锁，例如 `SELECT ... FOR UPDATE`。
 
-避免让 LiteFlow Node 自己打开多个不一致事务。
+关键事务通过 Spring `@Transactional` 统一管理；不建立 MyBatis-Flex 自有事务和 Spring 事务并存的两套习惯。
+
+避免让 LiteFlow Node 自己打开多个不一致事务，也禁止 LiteFlow Node 直接散落调用 Mapper 修改游戏状态。
 
 ## 10. 幂等与客户端重试
 
@@ -356,11 +403,69 @@ balanceVersion
 
 contentVersion 和 balanceVersion 可以更早支持并存；只有正式上线存在长期存档后，再设计严肃的 ruleVersion 兼容策略。
 
-## 15. 测试基线
+## 15. AI 开发与 E2E 基线
+
+项目把“AI 能独立完成开发验证闭环”作为客户端技术选型约束，而不是后补能力。
+
+### 主验证链路
+
+```text
+AI / Codex 修改代码
+  ↓
+CLI 启动 Java Server
+  ↓
+CLI 启动 uni-app x Web
+  ↓
+Playwright / uni-app 自动化执行 E2E
+  ↓
+读取浏览器、客户端和服务端日志
+  ↓
+修复
+  ↓
+再次回归
+```
+
+Web 是 V0.1 的主 E2E 平台，核心玩法链路必须能够无人工点击完成。
+
+首批 E2E 至少覆盖：
+
+```text
+进入游戏
+→ 开始一世
+→ 修炼
+→ 触发事件
+→ 选择事件
+→ 死亡 / 主动坐化
+→ 一世评价
+→ Anchor 选择
+→ 承世 / 悟世
+→ 开始下一世
+```
+
+### uni-app x CLI
+
+项目通过 `@dcloudio/hbuilderx-cli` / HBuilderX CLI 接入 uni-app x 编译、运行、日志与自动化测试能力。
+
+跨端测试分级：
+
+```text
+P0  Web
+    每个开发 Batch / PR 必跑完整核心 E2E
+
+P1  微信小程序
+    核心流程稳定后跑跨端 smoke / 回归
+
+P2  Android / iOS / HarmonyOS
+    对应平台进入发布范围后再加入发版回归
+```
+
+不要求每次代码修改都同时运行所有平台 E2E。
+
+## 16. 测试基线
 
 核心规则必须可无 UI 测试。
 
-重点测试：
+后端重点测试：
 
 - 回溯次数消耗。
 - Anchor 每大境界唯一和不可变。
@@ -376,3 +481,11 @@ contentVersion 和 balanceVersion 可以更早支持并存；只有正式上线�
 - 幂等死亡结算。
 
 集成测试优先使用 Testcontainers PostgreSQL。
+
+客户端测试分为：
+
+- 页面 / 组件级必要测试。
+- Web 核心 Playwright E2E。
+- uni-app x 官方自动化用于微信、Android、iOS、HarmonyOS 的跨端回归。
+
+最终验收以真实可运行结果为准，不以“代码已生成”作为完成标准。
