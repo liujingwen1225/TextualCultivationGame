@@ -1,0 +1,59 @@
+name: Engine Spike
+
+on:
+  push:
+    branches:
+      - spike/engine-selection
+    paths:
+      - 'spikes/**'
+      - '.github/workflows/engine-spike.yml'
+  workflow_dispatch:
+
+jobs:
+  libgdx:
+    name: libGDX CLI and headless
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Build and unit tests
+        run: gradle -p spikes/libgdx clean build --stacktrace
+      - name: Scenario test
+        run: gradle -p spikes/libgdx :core:scenarioTest --stacktrace
+      - name: Headless runtime smoke
+        run: gradle -p spikes/libgdx :headless:run --stacktrace
+
+  godot:
+    name: Godot .NET CLI and headless
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build pure C# core
+        run: dotnet build spikes/godot/core/SpikeCore.csproj --configuration Release
+      - name: Scenario test
+        run: dotnet run --project spikes/godot/scenario/Scenario.csproj --configuration Release
+      - name: Build Godot C# project
+        run: dotnet build spikes/godot/ZhushiEngineSpike.csproj --configuration Release
+      - name: Download official Godot 4.7.2 .NET
+        shell: bash
+        run: |
+          mkdir -p /tmp/godot
+          curl -L --fail --retry 3 \
+            -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_mono_linux_x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          GODOT_BIN="$(find /tmp/godot -type f -name 'Godot_*_mono_linux.x86_64' | head -n 1)"
+          test -n "$GODOT_BIN"
+          chmod +x "$GODOT_BIN"
+          echo "GODOT_BIN=$GODOT_BIN" >> "$GITHUB_ENV"
+      - name: Headless runtime smoke
+        run: '"$GODOT_BIN" --headless --path spikes/godot -- --headless-smoke'
