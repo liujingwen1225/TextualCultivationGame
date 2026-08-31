@@ -1,0 +1,22 @@
+; Engine configuration file.
+; Disposable engine-selection spike only.
+
+config_version=5
+
+[application]
+config/name="Zhushi Engine Spike - Godot"
+run/main_scene="res://Main.tscn"
+
+[display]
+
+[display/window]
+size/viewport_width=480
+size/viewport_height=288
+size/window_width_override=960
+size/window_height_override=576
+stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false

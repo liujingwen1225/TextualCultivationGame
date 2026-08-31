@@ -1,0 +1,10 @@
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+}
+
+tasks.register('scenarioTest', JavaExec) {
+    group = 'verification'
+    description = 'Runs the engine-neutral Blackwater spike scenario.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.zhushi.spike.core.ScenarioRunner'
+}

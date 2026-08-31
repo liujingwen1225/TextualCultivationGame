@@ -1,0 +1,12 @@
+apply plugin: 'application'
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+application {
+    mainClass = 'com.zhushi.spike.gdx.Lwjgl3Launcher'
+}

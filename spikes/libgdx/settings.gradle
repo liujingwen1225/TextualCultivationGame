@@ -1,0 +1,2 @@
+rootProject.name = 'zhushi-engine-spike-libgdx'
+include 'core', 'lwjgl3', 'headless'
